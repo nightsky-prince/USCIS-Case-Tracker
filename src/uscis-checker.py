@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 ##################################
-#
+# track uscis case status
 ##################################
 
 # standard library
@@ -14,12 +14,12 @@ import time
 from bs4 import BeautifulSoup
 import requests
 
-USCIS_CASE_CHECK_URL = 'https://egov.uscis.gov/casestatus/mycasestatus.do'
-SLEEP_SECONDS = 0
+USCIS_CASE_TRACK_URL = 'https://egov.uscis.gov/casestatus/mycasestatus.do'
+SLEEP_SECONDS = 0.2
 
 def get_parser():
     """set up parser and return it"""
-    parser = argparse.ArgumentParser(description='USCIS Checker')
+    parser = argparse.ArgumentParser(description='USCIS Tracker')
     parser.add_argument('-s', '--start', type=str, default='YSC2090175300',
             help='Start receipt number')
     parser.add_argument('-n', '--number', type=int, default=2,
@@ -36,13 +36,31 @@ def check_start_receipt_num(s):
     assert(s[3:].isdigit())
 
 
+def generate_receipt_numbers(start_receipt_num, cnt):
+    """return a list of all receipt numbers."""
+    try:
+        check_start_receipt_num(start_receipt_num)
+    except Exception as e:
+        print("Invalid receipt number {:s}.".format(start_receipt_num))
+        sys.exit(1)
+    loc, base = start_receipt_num[:3], int(start_receipt_num[3:])
+    receipt_numbers = []
+    for idx in range(cnt):
+        num = "{}{:d}".format(loc, base + idx)
+        if len(num) > 13:
+            break
+        receipt_numbers.append(num)
+    return receipt_numbers
+
+
 class USCIS:
 
-    def __init__(self, parser):
-        self.args = parser.parse_args()
+    def __init__(self, args, receipt_numbers):
+        self.args = args
+        self.receipt_numbers = receipt_numbers
+        print(self.receipt_numbers)
         self.nreceived = 0
         self.npassed = 0
-        self.receipt_numbers = self._generate_receipt_numbers()
         self.status = []
 
     def process(self):
@@ -59,27 +77,11 @@ class USCIS:
                 print("{}: {}".format(num, status))
         """
 
-    def _generate_receipt_numbers(self):
-        """return a list of all receipt numbers."""
-        start_receipt_num = self.args.start
-        try:
-            check_start_receipt_num(start_receipt_num)
-        except Exception as e:
-            print("Invalid receipt number {:s}.".format(start_receipt_num))
-            sys.exit(1)
-        loc, base = start_receipt_num[:3], int(start_receipt_num[3:])
-        receipt_numbers = []
-        for idx in range(self.args.number):
-            num = "{}{:d}".format(loc, base + idx)
-            if len(num) > 13:
-                break
-            receipt_numbers.append(num)
-        return receipt_numbers
 
     def _get_status(self, num):
         """get status of a single case."""
         header = {"User-Agent":"User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"}
-        r= requests.post(USCIS_CASE_CHECK_URL,headers=header,data={"changeLocale":"","appReceiptNum":num,"initCaseSearch":"CHECK STATUS"})
+        r= requests.post(USCIS_CASE_TRACK_URL,headers=header,data={"changeLocale":"","appReceiptNum":num,"initCaseSearch":"CHECK STATUS"})
         try:
             s=BeautifulSoup(r.content,"lxml")
             rs = s.find('div',"current-status-sec").text
@@ -102,7 +104,9 @@ class USCIS:
 def main():
     """main function."""
     parser = get_parser()
-    uscis_checker = USCIS(parser)
+    args = parser.parse_args()
+    receipt_numbers = generate_receipt_numbers(args.start, args.number)
+    uscis_checker = USCIS(args, receipt_numbers)
     uscis_checker.process()
 
 if __name__ == "__main__":

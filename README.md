@@ -1,2 +1,2 @@
-# USCIS-Case-Checker
-Check USCIS case status
+# USCIS Case Tracker
+Track USCIS case status
