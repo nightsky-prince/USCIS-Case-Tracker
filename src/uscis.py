@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 import requests
 
 USCIS_CASE_TRACK_URL = 'https://egov.uscis.gov/casestatus/mycasestatus.do'
-SLEEP_SECONDS = 0.2
+SLEEP_SECONDS = 0.2 # wait SLEEP_SECONDS after each query
 
 def get_parser():
     """set up parser and return it"""
@@ -27,9 +27,6 @@ def get_parser():
     parser.add_argument('-v', '--verbal', action='store_true',help='Print all status')
     parser.add_argument('-r', '--ratio', action='store_true',help='Print pass ratio.')
     return parser
-
-parser = get_parser()
-args = parser.parse_args()
 
 
 def check_start_receipt_num(s):
@@ -75,7 +72,7 @@ def get_status(num):
     return status, info
 
 
-def process(receipt_numbers):
+def process(receipt_numbers, verbal=False):
     """collect status of all receipt_numbers."""
     statuses = []
     infos = []
@@ -83,14 +80,14 @@ def process(receipt_numbers):
         status, info = get_status(num)
         statuses.append(status)
         infos.append(info)
-        if args.verbal:
+        if verbal:
             print("{}: {}".format(num, status))
         time.sleep(SLEEP_SECONDS)
     return statuses, infos
 
 
 def print_statistics(statuses):
-    """print statistics."""
+    """print statistics of the statuses."""
     npassed = 0
     for status in statuses:
         if not "Case Was Received" in status:
@@ -103,8 +100,10 @@ def print_statistics(statuses):
 
 def main():
     """main function."""
+    parser = get_parser()
+    args = parser.parse_args()
     receipt_numbers = generate_receipt_numbers(args.start, args.number)
-    statuses, infos = process(receipt_numbers)
+    statuses, infos = process(receipt_numbers, args.verbal)
     if args.ratio:
         print_statistics(statuses)
 
