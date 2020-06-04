@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 import requests
 
 USCIS_CASE_TRACK_URL = 'https://egov.uscis.gov/casestatus/mycasestatus.do'
+# USCIS_CASE_TRACK_URL = 'https://egov.uscis.gov/casestatus/landing.do'
 SLEEP_SECONDS = 0.2 # wait SLEEP_SECONDS after each query
 
 def get_parser():
@@ -59,7 +60,7 @@ def get_status(num):
     header = {"User-Agent":"User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"}
     r= requests.post(USCIS_CASE_TRACK_URL,headers=header,data={"changeLocale":"","appReceiptNum":num,"initCaseSearch":"CHECK STATUS"})
     try:
-        s=BeautifulSoup(r.content,"lxml")
+        s = BeautifulSoup(r.content,"lxml")
         rs = s.find('div',"current-status-sec").text
         rs = re.sub(r'[\t\n\r]',"",rs)
         matches = re.findall(r':.+\+', rs)
@@ -68,7 +69,7 @@ def get_status(num):
             status = matches[0][1:-1].strip()
         info = s.find('div', "rows text-center").text
     except Exception as e:
-        pass
+        status, info = "", ""
     return status, info
 
 
