@@ -15,7 +15,6 @@ from bs4 import BeautifulSoup
 import requests
 
 USCIS_CASE_TRACK_URL = 'https://egov.uscis.gov/casestatus/mycasestatus.do'
-# USCIS_CASE_TRACK_URL = 'https://egov.uscis.gov/casestatus/landing.do'
 SLEEP_SECONDS = 0.2 # wait SLEEP_SECONDS after each query
 
 def get_parser():
@@ -56,7 +55,10 @@ def generate_receipt_numbers(start_receipt_num, cnt):
 
 
 def get_status(num):
-    """get status of a single case."""
+    """get status and info of a single case.
+       status: e.g., Card Was Delivered To Me By The Post Office
+       info: contains more information
+    """
     header = {"User-Agent":"User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"}
     r= requests.post(USCIS_CASE_TRACK_URL,headers=header,data={"changeLocale":"","appReceiptNum":num,"initCaseSearch":"CHECK STATUS"})
     try:
@@ -70,6 +72,7 @@ def get_status(num):
         info = s.find('div', "rows text-center").text
     except Exception as e:
         status, info = "", ""
+    # print(status, info)
     return status, info
 
 
@@ -107,6 +110,7 @@ def main():
     statuses, infos = process(receipt_numbers, args.verbal)
     if args.ratio:
         print_statistics(statuses)
+
 
 if __name__ == "__main__":
     main()
